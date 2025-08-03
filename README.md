@@ -30,7 +30,7 @@ agent-aggregator/
 ├── config/
 │   └── agents.json             # Agent configuration file
 ├── tests/
-│   └── integration.test.js     # LIVE integration tests (NO MOCKS)
+│   └── integration.test.js     # Integration tests with real services
 ├── scripts/
 │   └── test-server.js          # Manual server testing script
 └── docs/                       # Documentation
@@ -220,68 +220,31 @@ The aggregator provides custom MCP methods for AI interactions:
 - `custom/models/info` - Get information about all models
 - `custom/status` - Get detailed status of all connections
 
-## 🧪 Testing (LIVE TESTING ONLY)
+## 🔍 Debugging
 
-**NO MOCK SCENARIOS** - All tests use real MCP servers and AI models:
+If you encounter issues, you can inspect the MCP server:
 
 ```bash
-# Run LIVE integration tests with real servers
-npm test
-
-# Test the MCP server directly  
-npm run test:server
-
-# Test AI models via OpenRouter
-npm run test:ai
-
-# Test with MCP inspector
+# Debug with MCP inspector
 npx @modelcontextprotocol/inspector node src/index.js
 ```
 
-### Testing Philosophy
-
-- ✅ **Real MCP servers only** - uses @modelcontextprotocol/server-filesystem
-- ✅ **Real AI models** - tests with actual OpenRouter API
-- ✅ **Live environment variables** - requires OPENROUTER_API_KEY
-- ✅ **Comprehensive testing** - covers all functionality end-to-end
-- ❌ **No mocks or stubs** - fail fast if services unavailable
-
-### Prerequisites for Testing
-
-1. **Required Environment Variable:**
-   ```bash
-   export OPENROUTER_API_KEY="sk-or-v1-your-actual-key-here"
-   ```
-
-2. **Internet Connection** - tests download and run real MCP servers
-
-3. **Node.js 18+** - required for MCP server packages
-
-4. **Available /tmp directory** - used by filesystem server tests
-
 ## 🛠️ Development
 
-### Code Style
-
-- ✅ Modern ES modules (no TypeScript)
-- ✅ JSDoc documentation in English
-- ✅ English code comments
-- ✅ Modular file structure
-- ✅ Comprehensive error handling
-- ✅ **LIVE TESTING ONLY** - no mock scenarios
+For developers who want to extend or contribute:
 
 ### Adding New MCP Servers
 
 1. Add server configuration to `config/agents.json`
-2. Ensure the MCP server package is available
-3. Test connection with `npm run test:server`
+2. Install the MCP server package
+3. Test the connection
 
-### Extending Functionality
+### Contributing
 
-The codebase is designed for easy extension:
-- Add new connection types in `MCPConnection.js`
-- Extend aggregation logic in `AgentAggregator.js`
-- Add new configuration options in `ConfigLoader.js`
+1. Fork the repository
+2. Create a feature branch
+3. Test your changes
+4. Submit a pull request
 
 ## 📝 Configuration Options
 
