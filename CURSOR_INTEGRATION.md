@@ -2,7 +2,7 @@
 
 ## Overview
 
-Agent Aggregator seamlessly integrates with Cursor AI, providing access to **23 powerful tools** from multiple MCP servers through a unified interface.
+Agent Aggregator seamlessly integrates with Cursor AI, providing access to **26 powerful tools** from multiple MCP servers through a unified interface, including advanced filter management capabilities.
 
 ## ✅ What's Already Configured
 
@@ -18,7 +18,7 @@ After restart, Cursor AI will automatically connect to Agent Aggregator and gain
 
 ## 🛠️ Available Tools
 
-Once connected, Cursor AI will have access to **23 tools** from 3 servers:
+Once connected, Cursor AI will have access to **26 tools** from 3 servers plus filter management:
 
 ### 📁 Filesystem Operations (14 tools)
 - `filesystem__read_text_file` - Read file contents
@@ -38,8 +38,13 @@ Once connected, Cursor AI will have access to **23 tools** from 3 servers:
 - `claude-code-mcp__your_own_query` - Custom queries
 
 ### 🎭 Qwen AI Assistant (2 tools)
-- `qwen-mcp__qwen_chat` - Chat with Qwen AI
-- `qwen-mcp__qwen_code` - Code generation with Qwen
+- `qwen-mcp__qwen_chat` - Chat with Qwen AI via OpenRouter
+- `qwen-mcp__qwen_code` - Code generation with Qwen via OpenRouter
+
+### 🔧 Filter Management (3 tools)
+- `filter__update` - Control tool visibility and filtering
+- `filter__get` - View current filter configuration  
+- `filter__reset` - Reset filters to show all tools
 
 ## 🔧 Configuration
 
@@ -50,11 +55,10 @@ The configuration is located in `~/.cursor/mcp.json`:
   "mcpServers": {
     "agent-aggregator": {
       "command": "node",
-      "args": ["start-mcp.js"],
-      "cwd": "/Users/username/Documents/GitHub/AgentAggregator",
+      "args": ["/path/to/AgentAggregator/start-mcp.js"],
       "env": {
-        "OPENROUTER_API_KEY": "sk-or-v1-...",
-        "DASHSCOPE_API_KEY": "${DASHSCOPE_API_KEY}"
+        "OPENROUTER_API_KEY": "your-openrouter-api-key",
+        "NODE_ENV": "production"
       }
     }
   }
@@ -96,7 +100,40 @@ The configuration is located in `~/.cursor/mcp.json`:
 After successful integration, simply chat with Cursor AI as usual. The AI will automatically use available tools when needed:
 
 - For file operations → `filesystem__*` tools
-- For code analysis → `claude-code-mcp__*` tools
-- For Qwen generation → `qwen-mcp__*` tools
+- For code analysis → `claude-code-mcp__*` tools  
+- For AI assistance → `qwen-mcp__*` tools
+- For tool management → `filter__*` tools
 
-**Ready! 🎉 Cursor now has access to all Agent Aggregator tools!**
+### 🔧 Filter Management Examples
+
+**Hide filesystem tools:**
+```json
+{
+  "name": "filter__update",
+  "arguments": {
+    "excludeServers": ["filesystem"]
+  }
+}
+```
+
+**Show only code-related tools:**
+```json
+{
+  "name": "filter__update", 
+  "arguments": {
+    "includePatterns": ["code", "explain", "review"]
+  }
+}
+```
+
+**Reset filters:**
+```json
+{
+  "name": "filter__reset",
+  "arguments": {}
+}
+```
+
+Filter settings are automatically saved and persist across restarts.
+
+**Ready! 🎉 Cursor now has access to all 26 Agent Aggregator tools!**

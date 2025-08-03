@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "agent-aggregator": {
+      "command": "node",
+      "args": ["/path/to/AgentAggregator/start-mcp.js"],
+      "env": {
+        "OPENROUTER_API_KEY": "your-openrouter-api-key",
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}

@@ -40,12 +40,12 @@
       "name": "qwen-mcp",
       "type": "mcp",
       "enabled": true,
-      "description": "Simple Qwen MCP server for AI chat and code generation",
+      "description": "Qwen AI assistant for chat and code generation via OpenRouter",
       "connection": {
         "command": "python3",
         "args": ["src/mcp-servers/qwen_mcp_server.py"],
         "env": {
-          "DASHSCOPE_API_KEY": "${DASHSCOPE_API_KEY}"
+          "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}"
         }
       },
       "model": {

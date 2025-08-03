@@ -6,6 +6,8 @@
  */
 
 import { MCPConnection } from './MCPConnection.js';
+import fs from 'fs';
+import path from 'path';
 
 export class AgentAggregator {
   /**
@@ -18,6 +20,72 @@ export class AgentAggregator {
     this.connections = new Map();
     this.tools = new Map();
     this.initialized = false;
+    this.filterConfigPath = 'config/filter.json';
+    
+    // Load saved filter or use default
+    this.toolFilter = this.loadFilterConfig();
+  }
+
+  /**
+   * Load filter configuration from file
+   * 
+   * @returns {Object} Filter configuration
+   */
+  loadFilterConfig() {
+    try {
+      const filterPath = path.resolve(this.filterConfigPath);
+      
+      if (fs.existsSync(filterPath)) {
+        const configData = fs.readFileSync(filterPath, 'utf8');
+        const savedFilter = JSON.parse(configData);
+        
+        console.error(`Loaded filter configuration from ${filterPath}:`, savedFilter);
+        return {
+          excludePatterns: savedFilter.excludePatterns || [],
+          excludeServers: savedFilter.excludeServers || [],
+          includePatterns: savedFilter.includePatterns || []
+        };
+      }
+    } catch (error) {
+      console.error('Failed to load filter configuration:', error.message);
+    }
+    
+    // Return default filter if loading fails
+    return {
+      excludePatterns: [],
+      excludeServers: [],
+      includePatterns: []
+    };
+  }
+
+  /**
+   * Save filter configuration to file
+   * 
+   * @param {Object} filterConfig - Filter configuration to save
+   */
+  saveFilterConfig(filterConfig) {
+    try {
+      const filterPath = path.resolve(this.filterConfigPath);
+      const configDir = path.dirname(filterPath);
+      
+      // Ensure config directory exists
+      if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true });
+      }
+      
+      // Save configuration with timestamp
+      const configToSave = {
+        ...filterConfig,
+        lastUpdated: new Date().toISOString(),
+        version: '1.0.0'
+      };
+      
+      fs.writeFileSync(filterPath, JSON.stringify(configToSave, null, 2), 'utf8');
+      console.error(`Filter configuration saved to ${filterPath}`);
+      
+    } catch (error) {
+      console.error('Failed to save filter configuration:', error.message);
+    }
   }
 
   /**
@@ -130,7 +198,205 @@ export class AgentAggregator {
   }
 
   /**
-   * List all available tools
+   * Get server metadata for AI understanding (dynamic based on active connections)
+   * 
+   * @returns {Object} Server metadata with descriptions and capabilities
+   */
+  getServerMetadata() {
+    const connectedServers = {};
+    
+    for (const [agentName, connection] of this.connections) {
+      const mcpServerName = this.extractMCPServerName(connection.agentConfig);
+      const agentConfig = connection.agentConfig;
+      
+      // Extract server info from agent configuration dynamically
+      const serverInfo = {
+        purpose: agentConfig.description || `${mcpServerName} server operations`,
+        description: agentConfig.description || `MCP server providing ${mcpServerName} capabilities`,
+        capabilities: this.extractCapabilitiesFromTools(agentName)
+      };
+      
+      const toolCount = Array.from(this.tools.values()).filter(tool => tool.agentName === agentName).length;
+      
+      connectedServers[mcpServerName] = {
+        ...serverInfo,
+        agentName,
+        connected: connection.isConnected(),
+        toolCount,
+        modelProvider: agentConfig.model?.provider || 'unknown',
+        modelName: agentConfig.model?.name || 'unknown',
+        enabled: agentConfig.enabled
+      };
+    }
+
+    // Generate dynamic concept description based on active servers
+    const activeServerNames = Object.keys(connectedServers);
+    const conceptDescription = activeServerNames.length > 0 
+      ? `Agent Aggregator is a unified MCP server that connects ${activeServerNames.length} specialized MCP servers: ${activeServerNames.join(', ')}. Each server provides specific capabilities and tools are prefixed with server names for easy identification.`
+      : 'Agent Aggregator is a unified MCP server ready to connect to multiple specialized MCP servers.';
+
+    return {
+      concept: conceptDescription,
+      totalConnections: this.connections.size,
+      totalTools: this.tools.size,
+      servers: connectedServers
+    };
+  }
+
+  /**
+   * Check if tool should be included based on global filter
+   * 
+   * @param {string} toolName - Prefixed tool name
+   * @param {Object} tool - Tool object with metadata
+   * @returns {boolean} True if tool should be included
+   */
+  shouldIncludeTool(toolName, tool) {
+    const filter = this.toolFilter;
+    
+    // If include patterns are specified, only include matching tools
+    if (filter.includePatterns.length > 0) {
+      return filter.includePatterns.some(pattern => 
+        toolName.includes(pattern) || tool.originalName.includes(pattern)
+      );
+    }
+    
+    // Check server exclusions
+    if (filter.excludeServers.includes(tool.mcpServerName)) {
+      return false;
+    }
+    
+    // Check pattern exclusions
+    if (filter.excludePatterns.some(pattern => 
+        toolName.includes(pattern) || tool.originalName.includes(pattern)
+    )) {
+      return false;
+    }
+    
+    return true;
+  }
+
+  /**
+   * Extract capabilities from tools for a specific agent
+   * 
+   * @param {string} agentName - Name of the agent
+   * @returns {Array<string>} Array of capabilities
+   */
+  extractCapabilitiesFromTools(agentName) {
+    const agentTools = Array.from(this.tools.values()).filter(tool => tool.agentName === agentName);
+    
+    if (agentTools.length === 0) {
+      return ['no tools available'];
+    }
+
+    // Extract capabilities from tool names and descriptions
+    const capabilities = agentTools.map(tool => {
+      const toolName = tool.originalName.toLowerCase();
+      const description = tool.description || '';
+      
+      // Common capability patterns
+      if (toolName.includes('read') || toolName.includes('list') || toolName.includes('search')) {
+        return 'data reading/retrieval';
+      }
+      if (toolName.includes('write') || toolName.includes('create') || toolName.includes('edit')) {
+        return 'data writing/modification';
+      }
+      if (toolName.includes('code') || toolName.includes('explain') || toolName.includes('review')) {
+        return 'code analysis';
+      }
+      if (toolName.includes('chat') || toolName.includes('generate')) {
+        return 'AI assistance';
+      }
+      if (toolName.includes('file') || toolName.includes('directory')) {
+        return 'file operations';
+      }
+      
+      // Fallback to tool name if no pattern matches
+      return toolName.replace(/_/g, ' ');
+    });
+
+    // Remove duplicates and return unique capabilities
+    return [...new Set(capabilities)];
+  }
+
+  /**
+   * Get filter management tools
+   * 
+   * @returns {Array} Array of filter management tool definitions
+   */
+  getFilterManagementTools() {
+    return [
+      {
+        name: 'filter__update',
+        description: '[Filter Management] Update tool visibility filter - control which tools are visible to AI',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            excludePatterns: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Tool name patterns to exclude (e.g., ["read", "list"])',
+              default: []
+            },
+            excludeServers: {
+              type: 'array', 
+              items: { type: 'string' },
+              description: 'Server names to exclude completely (e.g., ["filesystem"])',
+              default: []
+            },
+            includePatterns: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Only include tools matching these patterns (overrides excludes)',
+              default: []
+            }
+          },
+          additionalProperties: false
+        },
+        metadata: {
+          server: 'aggregator',
+          agent: 'filter-manager',
+          originalName: 'update',
+          serverPurpose: 'Filter Management',
+          connected: true
+        }
+      },
+      {
+        name: 'filter__get',
+        description: '[Filter Management] Get current tool filter configuration',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+          additionalProperties: false
+        },
+        metadata: {
+          server: 'aggregator',
+          agent: 'filter-manager',
+          originalName: 'get',
+          serverPurpose: 'Filter Management',
+          connected: true
+        }
+      },
+      {
+        name: 'filter__reset',
+        description: '[Filter Management] Reset tool filter to show all available tools',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+          additionalProperties: false
+        },
+        metadata: {
+          server: 'aggregator',
+          agent: 'filter-manager',
+          originalName: 'reset',
+          serverPurpose: 'Filter Management',
+          connected: true
+        }
+      }
+    ];
+  }
+
+  /**
+   * List all available tools with enhanced descriptions
    * 
    * @returns {Promise<Array>} Array of tool definitions
    */
@@ -139,13 +405,67 @@ export class AgentAggregator {
       throw new Error('AgentAggregator not initialized');
     }
 
-    const toolList = Array.from(this.tools.entries()).map(([prefixedName, tool]) => ({
-      name: prefixedName,
-      description: tool.description || `Tool from ${tool.agentName}`,
-      inputSchema: tool.inputSchema || { type: 'object', properties: {} }
-    }));
+    const serverMetadata = this.getServerMetadata();
+    
+    // Get filtered regular tools
+    const regularTools = Array.from(this.tools.entries())
+      .filter(([prefixedName, tool]) => this.shouldIncludeTool(prefixedName, tool))
+      .map(([prefixedName, tool]) => {
+        const serverInfo = serverMetadata.servers[tool.mcpServerName];
+        const serverPurpose = serverInfo?.purpose || `${tool.mcpServerName} operations`;
+        
+        const enhancedDescription = tool.description 
+          ? `[${serverPurpose}] ${tool.description}`
+          : `[${serverPurpose}] ${tool.originalName.replace(/_/g, ' ')} tool`;
+        
+        return {
+          name: prefixedName,
+          description: enhancedDescription,
+          inputSchema: tool.inputSchema || { type: 'object', properties: {} },
+          metadata: {
+            server: tool.mcpServerName,
+            agent: tool.agentName,
+            originalName: tool.originalName,
+            serverPurpose,
+            connected: serverInfo?.connected || false
+          }
+        };
+      });
 
-    return toolList;
+    // Always include filter management tools
+    const filterTools = this.getFilterManagementTools();
+    
+    return [...regularTools, ...filterTools];
+  }
+
+  /**
+   * Update global tool filter and save to disk
+   * 
+   * @param {Object} filterConfig - Filter configuration
+   * @param {Array<string>} filterConfig.excludePatterns - Patterns to exclude
+   * @param {Array<string>} filterConfig.excludeServers - Servers to exclude
+   * @param {Array<string>} filterConfig.includePatterns - Patterns to include only
+   */
+  updateToolFilter(filterConfig) {
+    this.toolFilter = {
+      excludePatterns: filterConfig.excludePatterns || [],
+      excludeServers: filterConfig.excludeServers || [],
+      includePatterns: filterConfig.includePatterns || []
+    };
+    
+    // Save to disk for persistence
+    this.saveFilterConfig(this.toolFilter);
+    
+    console.error('Tool filter updated and saved:', this.toolFilter);
+  }
+
+  /**
+   * Get current tool filter configuration
+   * 
+   * @returns {Object} Current filter configuration
+   */
+  getToolFilter() {
+    return { ...this.toolFilter };
   }
 
   /**
@@ -180,15 +500,18 @@ export class AgentAggregator {
   }
 
   /**
-   * Get connection status for all agents
+   * Get comprehensive status including server metadata
    * 
-   * @returns {Object} Status information
+   * @returns {Object} Status information with server metadata
    */
   getStatus() {
+    const serverMetadata = this.getServerMetadata();
+    
     const status = {
       initialized: this.initialized,
       totalConnections: this.connections.size,
       totalTools: this.tools.size,
+      serverMetadata,
       agents: {}
     };
 

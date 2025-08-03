@@ -119,3 +119,6 @@ coverage/
 CURSOR_SETUP.md
 PRODUCTION_SETUP.md
 PROJECT_STATUS.md
+
+# User-specific filter configuration
+config/filter.json

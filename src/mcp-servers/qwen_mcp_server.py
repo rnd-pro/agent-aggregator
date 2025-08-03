@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 """
-Simple MCP Server for Qwen Agent
-Provides basic tools for Qwen Agent integration
+Qwen MCP Server using OpenRouter API
+Provides Qwen AI tools via unified OpenRouter interface
 """
 
 import json
 import sys
-import asyncio
+import os
+import requests
 from typing import Dict, Any, List
 
 class QwenMCPServer:
     def __init__(self):
+        self.openrouter_key = os.getenv('OPENROUTER_API_KEY')
+        self.base_url = "https://openrouter.ai/api/v1"
+        self.model = "qwen/qwen3-coder:free"
+        
         self.tools = {
             "qwen_chat": {
                 "name": "qwen_chat",
@@ -45,6 +50,40 @@ class QwenMCPServer:
                 }
             }
         }
+    
+    def call_openrouter(self, messages, max_tokens=1000):
+        """Call OpenRouter API for Qwen model"""
+        if not self.openrouter_key:
+            return "Error: OPENROUTER_API_KEY not configured"
+        
+        try:
+            headers = {
+                "Authorization": f"Bearer {self.openrouter_key}",
+                "Content-Type": "application/json"
+            }
+            
+            payload = {
+                "model": self.model,
+                "messages": messages,
+                "max_tokens": max_tokens,
+                "temperature": 0.7
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return result['choices'][0]['message']['content']
+            else:
+                return f"Error: OpenRouter API returned {response.status_code}: {response.text}"
+                
+        except Exception as e:
+            return f"Error calling OpenRouter API: {str(e)}"
     
     def handle_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
         """Handle incoming MCP requests"""
@@ -83,7 +122,9 @@ class QwenMCPServer:
             
             if tool_name == "qwen_chat":
                 message = args.get("message", "")
-                result = f"Qwen response to: {message}"
+                messages = [{"role": "user", "content": message}]
+                result = self.call_openrouter(messages)
+                
                 return {
                     "jsonrpc": "2.0",
                     "id": request_id,
@@ -100,7 +141,11 @@ class QwenMCPServer:
             elif tool_name == "qwen_code":
                 prompt = args.get("prompt", "")
                 language = args.get("language", "python")
-                result = f"# Generated {language} code for: {prompt}\nprint('Hello from Qwen!')"
+                
+                code_prompt = f"Generate {language} code for: {prompt}\n\nPlease provide only the code without explanations."
+                messages = [{"role": "user", "content": code_prompt}]
+                result = self.call_openrouter(messages, max_tokens=1500)
+                
                 return {
                     "jsonrpc": "2.0",
                     "id": request_id,

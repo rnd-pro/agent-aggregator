@@ -49,6 +49,36 @@ cd AgentAggregator
 npm install
 ```
 
+### Quick Start with Cursor
+
+1. **Add to Cursor MCP configuration** (`~/.cursor/mcp.json`):
+```json
+{
+  "mcpServers": {
+    "agent-aggregator": {
+      "command": "node",
+      "args": ["/path/to/AgentAggregator/start-mcp.js"],
+      "env": {
+        "OPENROUTER_API_KEY": "your-openrouter-api-key",
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}
+```
+
+2. **Set your OpenRouter API key**:
+   - Get key from https://openrouter.ai/
+   - Replace `your-openrouter-api-key` with actual key
+
+3. **Restart Cursor** and you'll have access to **26 tools**:
+   - 14 filesystem operations
+   - 7 code analysis tools  
+   - 2 AI assistance tools
+   - 3 filter management tools
+
+See [CURSOR_INTEGRATION.md](CURSOR_INTEGRATION.md) for full setup guide.
+
 ### Configuration
 
 Edit `config/agents.json` to configure which MCP servers to connect to:
