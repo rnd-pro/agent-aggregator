@@ -12,13 +12,13 @@
       }
     },
     {
-      "name": "fetch",
+      "name": "everything",
       "type": "mcp",
       "enabled": true,
-      "description": "HTTP fetch server for making web requests",
+      "description": "Everything server for testing all MCP features",
       "connection": {
         "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-fetch"],
+        "args": ["-y", "@modelcontextprotocol/server-everything"],
         "env": {}
       }
     },

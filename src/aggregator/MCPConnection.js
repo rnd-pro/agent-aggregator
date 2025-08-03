@@ -5,7 +5,6 @@
  * with a single MCP server instance.
  */
 
-import { spawn } from 'child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
@@ -35,49 +34,17 @@ export class MCPConnection {
       console.error(`Starting MCP server for ${this.agentConfig.name}...`);
       console.error(`Command: ${this.agentConfig.connection.command}`);
       console.error(`Args: ${JSON.stringify(this.agentConfig.connection.args)}`);
-      
-      // Spawn the MCP server process
-      this.process = spawn(
-        this.agentConfig.connection.command,
-        this.agentConfig.connection.args,
-        {
-          env: {
-            ...process.env,
-            ...this.agentConfig.connection.env
-          },
-          stdio: ['pipe', 'pipe', 'pipe']
-        }
-      );
-
-      // Handle process errors
-      this.process.on('error', (error) => {
-        console.error(`Process error for ${this.agentConfig.name}:`, error);
-        this.connected = false;
-      });
-
-      this.process.on('exit', (code, signal) => {
-        console.error(`Process exited for ${this.agentConfig.name}: code=${code}, signal=${signal}`);
-        this.connected = false;
-      });
-
-      this.process.stderr.on('data', (data) => {
-        console.error(`Process stderr for ${this.agentConfig.name}:`, data.toString());
-      });
-
-      // Wait a bit for process to start
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Verify process streams are available
-      if (!this.process.stdin || !this.process.stdout) {
-        throw new Error(`Process streams not available for ${this.agentConfig.name}`);
-      }
 
       console.error(`Creating transport for ${this.agentConfig.name}...`);
 
-      // Create MCP client and transport
+      // Create MCP client and transport using server parameters
       this.transport = new StdioClientTransport({
-        stdin: this.process.stdin,
-        stdout: this.process.stdout
+        command: this.agentConfig.connection.command,
+        args: this.agentConfig.connection.args,
+        env: {
+          ...process.env,
+          ...this.agentConfig.connection.env
+        }
       });
 
       this.client = new Client(
@@ -127,9 +94,40 @@ export class MCPConnection {
         }
       );
 
-      return response.tools || [];
+      // Handle different response formats
+      if (response.result && response.result.tools) {
+        return response.result.tools;
+      } else if (response.tools) {
+        return response.tools;
+      } else {
+        console.error(`Unexpected tools/list response format from ${this.agentConfig.name}:`, response);
+        return [];
+      }
 
     } catch (error) {
+      if (error.message.includes('resultSchema.parse is not a function')) {
+        // This is a known SDK compatibility issue, try to handle gracefully
+        console.error(`SDK compatibility issue with ${this.agentConfig.name}, returning empty tools list`);
+        console.error(`Attempting manual tools/list request...`);
+        
+        try {
+          // Try a more basic request without result validation
+          const rawResponse = await this.client.request({ method: 'tools/list' });
+          console.error(`Raw response from ${this.agentConfig.name}:`, rawResponse);
+          
+          // Try different response format extractions
+          if (rawResponse && rawResponse.result && rawResponse.result.tools) {
+            return rawResponse.result.tools;
+          } else if (rawResponse && rawResponse.tools) {
+            return rawResponse.tools;
+          }
+          
+          return [];
+        } catch (innerError) {
+          console.error(`Manual request also failed for ${this.agentConfig.name}:`, innerError.message);
+          return [];
+        }
+      }
       throw new Error(`Failed to list tools from ${this.agentConfig.name}: ${error.message}`);
     }
   }
@@ -173,7 +171,7 @@ export class MCPConnection {
    * @returns {boolean} Connection status
    */
   isConnected() {
-    return this.connected && this.client && this.process && !this.process.killed;
+    return this.connected && this.client && this.transport;
   }
 
   /**
@@ -212,24 +210,6 @@ export class MCPConnection {
         console.error(`Error closing transport for ${this.agentConfig.name}:`, error);
       }
       this.transport = null;
-    }
-
-    // Kill process
-    if (this.process && !this.process.killed) {
-      try {
-        this.process.kill('SIGTERM');
-        
-        // Force kill after timeout
-        setTimeout(() => {
-          if (!this.process.killed) {
-            this.process.kill('SIGKILL');
-          }
-        }, 5000);
-        
-      } catch (error) {
-        console.error(`Error killing process for ${this.agentConfig.name}:`, error);
-      }
-      this.process = null;
     }
   }
 }

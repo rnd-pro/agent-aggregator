@@ -72,7 +72,9 @@ export class AgentAggregator {
    */
   async loadToolsFromConnection(agentName, connection) {
     try {
+      console.error(`Attempting to load tools from ${agentName}...`);
       const tools = await connection.listTools();
+      console.error(`Raw tools response from ${agentName}:`, JSON.stringify(tools, null, 2));
       
       for (const tool of tools) {
         // Prefix tool names with agent name to avoid conflicts
@@ -90,6 +92,7 @@ export class AgentAggregator {
       
     } catch (error) {
       console.error(`Failed to load tools from ${agentName}:`, error.message);
+      console.error(`Error stack:`, error.stack);
     }
   }
 
