@@ -1,0 +1,25 @@
+{
+  "name": "agent-aggregator",
+  "version": "1.0.0",
+  "description": "MCP server that aggregates tools from multiple MCP servers",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "agent-aggregator": "src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node tests/integration.test.js",
+    "test:server": "node scripts/test-server.js",
+    "dev": "node --watch src/index.js"
+  },
+  "keywords": ["mcp", "server", "aggregator", "proxy", "ai", "agents"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

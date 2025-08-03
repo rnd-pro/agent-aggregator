@@ -1,0 +1,46 @@
+{
+  "agents": [
+    {
+      "name": "filesystem",
+      "type": "mcp",
+      "enabled": true,
+      "description": "File system operations server for local file access",
+      "connection": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+        "env": {}
+      }
+    },
+    {
+      "name": "fetch",
+      "type": "mcp",
+      "enabled": true,
+      "description": "HTTP fetch server for making web requests",
+      "connection": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-fetch"],
+        "env": {}
+      }
+    },
+    {
+      "name": "claude-code-mcp",
+      "type": "mcp",
+      "enabled": false,
+      "description": "Claude Code MCP server wrapper (requires Claude CLI)",
+      "connection": {
+        "command": "npx",
+        "args": ["-y", "@kunihiros/claude-code-mcp"],
+        "env": {
+          "CLAUDE_BIN": "/usr/local/bin/claude",
+          "LOG_LEVEL": "info"
+        }
+      }
+    }
+  ],
+  "aggregator": {
+    "timeout": 30000,
+    "retryAttempts": 3,
+    "retryDelay": 1000,
+    "concurrentConnections": 3
+  }
+}
