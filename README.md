@@ -45,7 +45,7 @@ agent-aggregator/
 npm install -g agent-aggregator
 
 # Or clone the repository for development
-git clone https://github.com/RND-PRO/agent-aggregator.git
+git clone https://github.com/rnd-pro/agent-aggregator.git
 cd agent-aggregator
 
 # Install dependencies
@@ -74,13 +74,11 @@ npm install
    - Get key from https://openrouter.ai/
    - Replace `your-openrouter-api-key` with actual key
 
-3. **Restart Cursor** and you'll have access to **26 tools**:
-   - 14 filesystem operations
-   - 7 code analysis tools  
-   - 2 AI assistance tools
-   - 3 filter management tools
-
-See [CURSOR_INTEGRATION.md](CURSOR_INTEGRATION.md) for full setup guide.
+3. **Restart Cursor** and you'll have access to **14+ tools** from connected MCP servers:
+   - Filesystem operations
+   - Code analysis tools  
+   - AI assistance tools
+   - And more based on your configuration
 
 ### Configuration
 
@@ -176,13 +174,12 @@ Add to your MCP client configuration (e.g., Cursor):
 
 Currently configured to work with:
 - **Filesystem**: `@modelcontextprotocol/server-filesystem` - File system operations
-- **Fetch**: `@modelcontextprotocol/server-fetch` - HTTP requests and web fetching  
-- **Claude Code MCP**: `@kunihiros/claude-code-mcp` - Claude Code wrapper (disabled by default)
+- **Claude Code MCP**: `@kunihiros/claude-code-mcp` - Claude Code wrapper
 
 You can add any MCP server that supports the standard MCP protocol. Popular options include:
 - `@modelcontextprotocol/server-github` - GitHub API operations
-- `@modelcontextprotocol/server-memory` - Memory management for Claude
-- `@playwright/mcp` - Browser automation with Playwright
+- `@modelcontextprotocol/server-memory` - Memory management
+- `@modelcontextprotocol/server-fetch` - HTTP requests and web fetching
 
 ## 📊 Architecture
 
@@ -386,12 +383,12 @@ DEBUG=1 npm start
 3. Update documentation
 4. Test with real MCP servers
 
-## 📚 Documentation
+## 📚 Links
 
-- **[Cursor Integration Guide](CURSOR_INTEGRATION.md)** - How to integrate with Cursor AI
-- **[Production Deployment Guide](PRODUCTION_GUIDE.md)** - Production setup for end users
-- **[Project Status](PROJECT_STATUS.md)** - Current development status
+- **[npm Package](https://www.npmjs.com/package/agent-aggregator)** - Install from npm registry
+- **[GitHub Repository](https://github.com/rnd-pro/agent-aggregator)** - Source code and issues
+- **[OpenRouter API](https://openrouter.ai/)** - Get your API key for AI models
 
 ## 📄 License
 
-MIT License - see LICENSE file for details.
+MIT License
