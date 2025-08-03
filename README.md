@@ -1,6 +1,6 @@
 # Agent Aggregator
 
-MCP Server that aggregates tools from multiple MCP servers, acting as a proxy to provide unified access to various AI agents and tools.
+**MCP Server that aggregates tools from multiple MCP servers**, acting as a proxy to provide unified access to various AI agents and tools.
 
 ## 🎯 Features
 
@@ -15,7 +15,7 @@ MCP Server that aggregates tools from multiple MCP servers, acting as a proxy to
 ## 📁 Project Structure
 
 ```
-AgentAggregator/
+agent-aggregator/
 ├── src/
 │   ├── index.js                 # Main MCP server entry point
 │   ├── aggregator/
@@ -41,9 +41,12 @@ AgentAggregator/
 ### Installation
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd AgentAggregator
+# Install globally from npm
+npm install -g agent-aggregator
+
+# Or clone the repository for development
+git clone https://github.com/RND-PRO/agent-aggregator.git
+cd agent-aggregator
 
 # Install dependencies
 npm install
@@ -56,8 +59,8 @@ npm install
 {
   "mcpServers": {
     "agent-aggregator": {
-      "command": "node",
-      "args": ["/path/to/AgentAggregator/start-mcp.js"],
+      "command": "npx",
+      "args": ["agent-aggregator"],
       "env": {
         "OPENROUTER_API_KEY": "your-openrouter-api-key",
         "NODE_ENV": "production"
@@ -162,8 +165,8 @@ Add to your MCP client configuration (e.g., Cursor):
 {
   "mcpServers": {
     "agent-aggregator": {
-      "command": "node",
-      "args": ["/path/to/AgentAggregator/src/index.js"]
+      "command": "npx",
+      "args": ["agent-aggregator"]
     }
   }
 }

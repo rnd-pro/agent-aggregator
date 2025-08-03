@@ -1,5 +1,5 @@
 {
-  "name": "@agent-aggregator/core",
+  "name": "agent-aggregator",
   "version": "1.0.0",
   "description": "MCP server that aggregates tools from multiple MCP servers and provides unified access to AI agents",
   "type": "module",
@@ -22,17 +22,17 @@
     "src/",
     "bin/",
     "config/",
-    "README.md",
-    "CURSOR_SETUP.md"
+    "start-mcp.js",
+    "README.md"
   ],
   "keywords": ["mcp", "server", "aggregator", "proxy", "ai", "agents", "cursor", "qwen", "claude"],
-  "author": "Agent Aggregator Team",
+  "author": "RND-PRO",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/agent-aggregator.git"
+    "url": "https://github.com/RND-PRO/agent-aggregator.git"
   },
-  "homepage": "https://github.com/your-org/agent-aggregator#readme",
+  "homepage": "https://github.com/RND-PRO/agent-aggregator#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
