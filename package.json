@@ -1,6 +1,6 @@
 {
   "name": "agent-aggregator",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server that aggregates tools from multiple MCP servers and provides unified access to AI agents",
   "type": "module",
   "main": "src/index.js",
