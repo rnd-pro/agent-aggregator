@@ -26,8 +26,7 @@ AgentAggregator/
 ├── config/
 │   └── agents.json             # Agent configuration file
 ├── tests/
-│   ├── integration.test.js     # Integration tests
-│   └── mock-mcp-server.js      # Mock MCP server for testing
+│   └── integration.test.js     # LIVE integration tests (NO MOCKS)
 ├── scripts/
 │   └── test-server.js          # Manual server testing script
 └── docs/                       # Documentation
@@ -187,18 +186,44 @@ The aggregator provides custom MCP methods for AI interactions:
 - `custom/models/info` - Get information about all models
 - `custom/status` - Get detailed status of all connections
 
-## 🧪 Testing
+## 🧪 Testing (LIVE TESTING ONLY)
+
+**NO MOCK SCENARIOS** - All tests use real MCP servers and AI models:
 
 ```bash
-# Run all integration tests
+# Run LIVE integration tests with real servers
 npm test
 
-# Test the MCP server directly
+# Test the MCP server directly  
 npm run test:server
+
+# Test AI models via OpenRouter
+npm run test:ai
 
 # Test with MCP inspector
 npx @modelcontextprotocol/inspector node src/index.js
 ```
+
+### Testing Philosophy
+
+- ✅ **Real MCP servers only** - uses @modelcontextprotocol/server-filesystem
+- ✅ **Real AI models** - tests with actual OpenRouter API
+- ✅ **Live environment variables** - requires OPENROUTER_API_KEY
+- ✅ **Comprehensive testing** - covers all functionality end-to-end
+- ❌ **No mocks or stubs** - fail fast if services unavailable
+
+### Prerequisites for Testing
+
+1. **Required Environment Variable:**
+   ```bash
+   export OPENROUTER_API_KEY="sk-or-v1-your-actual-key-here"
+   ```
+
+2. **Internet Connection** - tests download and run real MCP servers
+
+3. **Node.js 18+** - required for MCP server packages
+
+4. **Available /tmp directory** - used by filesystem server tests
 
 ## 🛠️ Development
 
@@ -209,6 +234,7 @@ npx @modelcontextprotocol/inspector node src/index.js
 - ✅ English code comments
 - ✅ Modular file structure
 - ✅ Comprehensive error handling
+- ✅ **LIVE TESTING ONLY** - no mock scenarios
 
 ### Adding New MCP Servers
 

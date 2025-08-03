@@ -292,4 +292,123 @@ export class AgentAggregator {
     
     console.error('Agent Aggregator cleanup completed');
   }
+
+  /**
+   * Handle custom MCP methods for testing
+   * 
+   * @param {string} method - Method name (e.g., 'custom/agents/list')
+   * @param {Object} params - Method parameters
+   * @returns {Promise<Object>} Method response
+   */
+  async handleCustomMethod(method, params = {}) {
+    switch (method) {
+      case 'custom/agents/list':
+        return this.getAgentsList();
+      
+      case 'custom/status':
+        return this.getStatus();
+      
+      case 'custom/model/generate':
+        return this.generateWithModel(params);
+      
+      case 'custom/model/chat':
+        return this.chatWithModel(params);
+      
+      case 'custom/models/info':
+        return this.getModelInfo();
+      
+      default:
+        throw new Error(`Unknown custom method: ${method}`);
+    }
+  }
+
+  /**
+   * Get list of configured agents
+   * 
+   * @returns {Promise<Object>} Agents list
+   */
+  async getAgentsList() {
+    const agents = Array.from(this.connections.values()).map(connection => ({
+      name: connection.agentConfig.name,
+      type: connection.agentConfig.type,
+      enabled: connection.agentConfig.enabled,
+      description: connection.agentConfig.description,
+      connected: connection.connected,
+      toolCount: connection.tools ? connection.tools.length : 0,
+      model: connection.agentConfig.model
+    }));
+
+    return { agents };
+  }
+
+  /**
+   * Generate text using agent's model
+   * 
+   * @param {Object} params - Generation parameters
+   * @returns {Promise<Object>} Generation response
+   */
+  async generateWithModel(params) {
+    const { agentName, prompt, maxTokens = 100 } = params;
+    
+    const connection = this.connections.get(agentName);
+    if (!connection) {
+      throw new Error(`Agent not found: ${agentName}`);
+    }
+
+    if (!connection.openRouterClient) {
+      throw new Error(`No AI model configured for agent: ${agentName}`);
+    }
+
+    // Use chat method which is the main API method
+    const response = await connection.openRouterClient.chat([
+      { role: 'user', content: prompt }
+    ], { max_tokens: maxTokens });
+    
+    return { content: response };
+  }
+
+  /**
+   * Chat with agent's model
+   * 
+   * @param {Object} params - Chat parameters
+   * @returns {Promise<Object>} Chat response
+   */
+  async chatWithModel(params) {
+    const { agentName, messages, maxTokens = 100 } = params;
+    
+    const connection = this.connections.get(agentName);
+    if (!connection) {
+      throw new Error(`Agent not found: ${agentName}`);
+    }
+
+    if (!connection.openRouterClient) {
+      throw new Error(`No AI model configured for agent: ${agentName}`);
+    }
+
+    const response = await connection.openRouterClient.chat(messages, { max_tokens: maxTokens });
+    return { content: response };
+  }
+
+  /**
+   * Get model information for all agents
+   * 
+   * @returns {Promise<Array>} Models information
+   */
+  async getModelInfo() {
+    const models = [];
+    
+    for (const [agentName, connection] of this.connections) {
+      if (connection.agentConfig.model) {
+        models.push({
+          agentName,
+          provider: connection.agentConfig.model.provider,
+          name: connection.agentConfig.model.name,
+          hasApiKey: !!connection.agentConfig.model.apiKey,
+          connected: connection.openRouterClient ? true : false
+        });
+      }
+    }
+    
+    return models;
+  }
 }
