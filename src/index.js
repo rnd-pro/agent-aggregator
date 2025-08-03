@@ -49,55 +49,6 @@ async function main() {
       const { name, arguments: args } = request.params;
       return await aggregator.callTool(name, args);
     });
-    
-    // Add custom handlers for AI model interactions
-    // Note: Custom methods may not be fully supported by MCP SDK yet
-    try {
-      server.setRequestHandler('custom/agents/list', async () => {
-        return {
-          agents: aggregator.getAgentsList()
-        };
-      });
-    } catch (error) {
-      console.error('Warning: Could not register custom/agents/list handler:', error.message);
-    }
-    
-    try {
-      server.setRequestHandler('custom/model/generate', async (request) => {
-        const { agentName, prompt, options = {} } = request.params;
-        const response = await aggregator.generateText(agentName, prompt, options);
-        return { response };
-      });
-    } catch (error) {
-      console.error('Warning: Could not register custom/model/generate handler:', error.message);
-    }
-    
-    try {
-      server.setRequestHandler('custom/model/chat', async (request) => {
-        const { agentName, messages, options = {} } = request.params;
-        const response = await aggregator.chatCompletion(agentName, messages, options);
-        return response;
-      });
-    } catch (error) {
-      console.error('Warning: Could not register custom/model/chat handler:', error.message);
-    }
-    
-    try {
-      server.setRequestHandler('custom/models/info', async () => {
-        const modelInfo = await aggregator.getModelInfo();
-        return { models: modelInfo };
-      });
-    } catch (error) {
-      console.error('Warning: Could not register custom/models/info handler:', error.message);
-    }
-    
-    try {
-      server.setRequestHandler('custom/status', async () => {
-        return aggregator.getStatus();
-      });
-    } catch (error) {
-      console.error('Warning: Could not register custom/status handler:', error.message);
-    }
 
     // Connect to stdio transport
     const transport = new StdioServerTransport();

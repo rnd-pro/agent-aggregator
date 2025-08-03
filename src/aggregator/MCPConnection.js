@@ -1,8 +1,8 @@
 /**
- * MCPConnection - Handles connection to individual MCP server
+ * MCPConnection - Manages connection to a single MCP server
  * 
- * This class manages the connection lifecycle and communication
- * with a single MCP server instance.
+ * This class handles the connection lifecycle and communication with an individual
+ * MCP server, using the proper MCP SDK patterns.
  */
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -21,8 +21,8 @@ export class MCPConnection {
     this.aggregatorConfig = aggregatorConfig;
     this.client = null;
     this.transport = null;
-    this.process = null;
     this.connected = false;
+    this.tools = [];
     
     // Initialize OpenRouter client if model configuration is provided
     this.openRouterClient = null;
@@ -31,7 +31,7 @@ export class MCPConnection {
         this.openRouterClient = new OpenRouterClient(agentConfig.model);
         console.error(`Initialized OpenRouter client for ${agentConfig.name} with model ${agentConfig.model.name}`);
       } catch (error) {
-        console.error(`Failed to initialize OpenRouter client for ${agentConfig.name}: ${error.message}`);
+        console.error(`Failed to initialize OpenRouter client for ${agentConfig.name}:`, error.message);
       }
     }
   }
@@ -47,9 +47,8 @@ export class MCPConnection {
       console.error(`Command: ${this.agentConfig.connection.command}`);
       console.error(`Args: ${JSON.stringify(this.agentConfig.connection.args)}`);
 
+      // Create the transport
       console.error(`Creating transport for ${this.agentConfig.name}...`);
-
-      // Create MCP client and transport using server parameters
       this.transport = new StdioClientTransport({
         command: this.agentConfig.connection.command,
         args: this.agentConfig.connection.args,
@@ -59,6 +58,7 @@ export class MCPConnection {
         }
       });
 
+      // Create the client
       this.client = new Client(
         {
           name: `agent-aggregator-client-${this.agentConfig.name}`,
@@ -71,34 +71,27 @@ export class MCPConnection {
         }
       );
 
-      // Connect with timeout
-      await Promise.race([
-        this.client.connect(this.transport),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Connection timeout')), this.aggregatorConfig.timeout)
-        )
-      ]);
-
+      // Connect to the server
+      await this.client.connect(this.transport);
       this.connected = true;
+
       console.error(`Successfully connected to MCP server: ${this.agentConfig.name}`);
-      
+
       // Test OpenRouter connection if available
       if (this.openRouterClient) {
         try {
-          const connectionTest = await this.openRouterClient.testConnection();
-          if (connectionTest) {
-            console.error(`OpenRouter connection verified for ${this.agentConfig.name}`);
-          } else {
-            console.error(`OpenRouter connection test failed for ${this.agentConfig.name}`);
-          }
+          await this.openRouterClient.testConnection();
+          console.error(`OpenRouter connection verified for ${this.agentConfig.name}`);
         } catch (error) {
-          console.error(`OpenRouter connection test error for ${this.agentConfig.name}: ${error.message}`);
+          console.error(`OpenRouter connection test failed: ${error.message}`);
+          console.error(`OpenRouter connection test failed for ${this.agentConfig.name}`);
         }
       }
 
     } catch (error) {
-      await this.cleanup();
-      throw new Error(`Failed to connect to ${this.agentConfig.name}: ${error.message}`);
+      console.error(`Failed to connect to ${this.agentConfig.name}:`, error.message);
+      this.connected = false;
+      throw error;
     }
   }
 
@@ -113,48 +106,24 @@ export class MCPConnection {
     }
 
     try {
-      const response = await this.client.request(
-        { method: 'tools/list' },
-        { 
-          timeout: this.aggregatorConfig.timeout 
-        }
-      );
+      console.error(`Requesting tools from ${this.agentConfig.name}...`);
+      
+      // Use the proper SDK method
+      const result = await this.client.listTools();
+      
+      console.error(`Tools response from ${this.agentConfig.name}:`, JSON.stringify(result, null, 2));
 
-      // Handle different response formats
-      if (response.result && response.result.tools) {
-        return response.result.tools;
-      } else if (response.tools) {
-        return response.tools;
+      // Extract tools from response
+      if (result && result.tools) {
+        return result.tools;
       } else {
-        console.error(`Unexpected tools/list response format from ${this.agentConfig.name}:`, response);
+        console.error(`No tools found in response from ${this.agentConfig.name}`);
         return [];
       }
 
     } catch (error) {
-      if (error.message.includes('resultSchema.parse is not a function')) {
-        // This is a known SDK compatibility issue, try to handle gracefully
-        console.error(`SDK compatibility issue with ${this.agentConfig.name}, returning empty tools list`);
-        console.error(`Attempting manual tools/list request...`);
-        
-        try {
-          // Try a more basic request without result validation
-          const rawResponse = await this.client.request({ method: 'tools/list' });
-          console.error(`Raw response from ${this.agentConfig.name}:`, rawResponse);
-          
-          // Try different response format extractions
-          if (rawResponse && rawResponse.result && rawResponse.result.tools) {
-            return rawResponse.result.tools;
-          } else if (rawResponse && rawResponse.tools) {
-            return rawResponse.tools;
-          }
-          
-          return [];
-        } catch (innerError) {
-          console.error(`Manual request also failed for ${this.agentConfig.name}:`, innerError.message);
-          return [];
-        }
-      }
-      throw new Error(`Failed to list tools from ${this.agentConfig.name}: ${error.message}`);
+      console.error(`Failed to list tools from ${this.agentConfig.name}:`, error.message);
+      return [];
     }
   }
 
@@ -171,22 +140,19 @@ export class MCPConnection {
     }
 
     try {
-      const response = await this.client.request(
-        {
-          method: 'tools/call',
-          params: {
-            name: toolName,
-            arguments: args
-          }
-        },
-        { 
-          timeout: this.aggregatorConfig.timeout 
-        }
-      );
+      console.error(`Calling tool ${toolName} on ${this.agentConfig.name}...`);
+      
+      // Use the proper SDK method
+      const result = await this.client.callTool({
+        name: toolName,
+        arguments: args
+      });
 
-      return response;
+      console.error(`Tool ${toolName} completed successfully on ${this.agentConfig.name}`);
+      return result;
 
     } catch (error) {
+      console.error(`Failed to call tool ${toolName} on ${this.agentConfig.name}:`, error.message);
       throw new Error(`Failed to call tool ${toolName} on ${this.agentConfig.name}: ${error.message}`);
     }
   }
@@ -233,76 +199,51 @@ export class MCPConnection {
     }
 
     try {
-      const response = await this.openRouterClient.createCompletion(messages, options);
+      const response = await this.openRouterClient.chat(messages, options);
       return response;
     } catch (error) {
-      throw new Error(`Failed to complete chat for ${this.agentConfig.name}: ${error.message}`);
+      throw new Error(`Failed to chat with ${this.agentConfig.name}: ${error.message}`);
     }
   }
 
   /**
-   * Get model information
+   * Get model information for this agent
    * 
-   * @returns {Promise<Object>} Model configuration and status
+   * @returns {Object} Model information
    */
   async getModelInfo() {
-    const info = {
+    return {
       agentName: this.agentConfig.name,
       hasModel: !!this.openRouterClient,
-      modelConfig: this.agentConfig.model || null
+      modelName: this.agentConfig.model?.name || null,
+      provider: this.agentConfig.model?.provider || null,
+      hasApiKey: !!this.agentConfig.model?.apiKey,
+      connected: this.connected
     };
-
-    if (this.openRouterClient) {
-      try {
-        const modelInfo = await this.openRouterClient.getModelInfo();
-        info.modelDetails = modelInfo;
-      } catch (error) {
-        info.modelError = error.message;
-      }
-    }
-
-    return info;
   }
 
   /**
-   * Disconnect from MCP server
+   * Disconnect from the MCP server
    * 
    * @returns {Promise<void>}
    */
   async disconnect() {
     console.error(`Disconnecting from ${this.agentConfig.name}...`);
-    await this.cleanup();
-  }
-
-  /**
-   * Cleanup connection resources
-   * 
-   * @returns {Promise<void>}
-   */
-  async cleanup() {
-    this.connected = false;
-
-    // Close client connection
-    if (this.client) {
-      try {
+    
+    try {
+      if (this.client) {
         await this.client.close();
-      } catch (error) {
-        console.error(`Error closing client for ${this.agentConfig.name}:`, error);
       }
-      this.client = null;
-    }
-
-    // Close transport
-    if (this.transport) {
-      try {
+      if (this.transport) {
         await this.transport.close();
-      } catch (error) {
-        console.error(`Error closing transport for ${this.agentConfig.name}:`, error);
       }
-      this.transport = null;
+    } catch (error) {
+      console.error(`Error during disconnect from ${this.agentConfig.name}:`, error.message);
     }
     
-    // OpenRouter client doesn't need explicit cleanup
-    this.openRouterClient = null;
+    this.connected = false;
+    this.client = null;
+    this.transport = null;
+    this.tools = [];
   }
 }

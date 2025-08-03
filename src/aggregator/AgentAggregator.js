@@ -64,6 +64,34 @@ export class AgentAggregator {
   }
 
   /**
+   * Extract MCP server name from agent configuration
+   * 
+   * @param {Object} agentConfig - Agent configuration object
+   * @returns {string} MCP server name for prefixing
+   */
+  extractMCPServerName(agentConfig) {
+    if (agentConfig.connection && agentConfig.connection.args) {
+      // Try to extract package name from npx command
+      const args = agentConfig.connection.args;
+      for (const arg of args) {
+        if (arg.startsWith('@') || arg.includes('/server-')) {
+          // Extract server name from package name
+          // @modelcontextprotocol/server-filesystem -> filesystem
+          // @kunihiros/claude-code-mcp -> claude-code-mcp
+          const packageName = arg.split('/').pop();
+          if (packageName.startsWith('server-')) {
+            return packageName.replace('server-', '');
+          }
+          return packageName;
+        }
+      }
+    }
+    
+    // Fallback to agent name if can't extract from package
+    return agentConfig.name;
+  }
+
+  /**
    * Load tools from a specific connection
    * 
    * @param {string} agentName - Name of the agent
@@ -76,19 +104,24 @@ export class AgentAggregator {
       const tools = await connection.listTools();
       console.error(`Raw tools response from ${agentName}:`, JSON.stringify(tools, null, 2));
       
+      // Extract MCP server name for dynamic prefixing
+      const mcpServerName = this.extractMCPServerName(connection.agentConfig);
+      console.error(`Using MCP server name for prefixing: ${mcpServerName}`);
+      
       for (const tool of tools) {
-        // Prefix tool names with agent name to avoid conflicts
-        const toolName = `${agentName}__${tool.name}`;
+        // Prefix tool names with MCP server name to avoid conflicts
+        const toolName = `${mcpServerName}__${tool.name}`;
         
         this.tools.set(toolName, {
           ...tool,
           originalName: tool.name,
           agentName: agentName,
+          mcpServerName: mcpServerName,
           connection: connection
         });
       }
       
-      console.error(`Loaded ${tools.length} tools from ${agentName}`);
+      console.error(`Loaded ${tools.length} tools from ${agentName} (MCP server: ${mcpServerName})`);
       
     } catch (error) {
       console.error(`Failed to load tools from ${agentName}:`, error.message);
@@ -106,8 +139,8 @@ export class AgentAggregator {
       throw new Error('AgentAggregator not initialized');
     }
 
-    const toolList = Array.from(this.tools.values()).map(tool => ({
-      name: tool.name,
+    const toolList = Array.from(this.tools.entries()).map(([prefixedName, tool]) => ({
+      name: prefixedName,
       description: tool.description || `Tool from ${tool.agentName}`,
       inputSchema: tool.inputSchema || { type: 'object', properties: {} }
     }));
@@ -171,106 +204,7 @@ export class AgentAggregator {
     return status;
   }
 
-  /**
-   * Generate text using a specific agent's AI model
-   * 
-   * @param {string} agentName - Name of the agent
-   * @param {string} prompt - Text prompt to generate
-   * @param {Object} options - Generation options
-   * @returns {Promise<string>} Generated text
-   */
-  async generateText(agentName, prompt, options = {}) {
-    if (!this.initialized) {
-      throw new Error('AgentAggregator not initialized');
-    }
 
-    const connection = this.connections.get(agentName);
-    if (!connection) {
-      throw new Error(`Agent not found: ${agentName}`);
-    }
-
-    if (!connection.isConnected()) {
-      throw new Error(`Agent not connected: ${agentName}`);
-    }
-
-    return await connection.generateText(prompt, options);
-  }
-
-  /**
-   * Send chat completion request to a specific agent's AI model
-   * 
-   * @param {string} agentName - Name of the agent
-   * @param {Array} messages - Array of message objects
-   * @param {Object} options - Completion options
-   * @returns {Promise<Object>} Chat completion response
-   */
-  async chatCompletion(agentName, messages, options = {}) {
-    if (!this.initialized) {
-      throw new Error('AgentAggregator not initialized');
-    }
-
-    const connection = this.connections.get(agentName);
-    if (!connection) {
-      throw new Error(`Agent not found: ${agentName}`);
-    }
-
-    if (!connection.isConnected()) {
-      throw new Error(`Agent not connected: ${agentName}`);
-    }
-
-    return await connection.chatCompletion(messages, options);
-  }
-
-  /**
-   * Get model information for all agents
-   * 
-   * @returns {Promise<Object>} Model information for all agents
-   */
-  async getModelInfo() {
-    if (!this.initialized) {
-      throw new Error('AgentAggregator not initialized');
-    }
-
-    const modelInfo = {};
-    
-    for (const [agentName, connection] of this.connections) {
-      try {
-        modelInfo[agentName] = await connection.getModelInfo();
-      } catch (error) {
-        modelInfo[agentName] = {
-          agentName: agentName,
-          hasModel: false,
-          error: error.message
-        };
-      }
-    }
-
-    return modelInfo;
-  }
-
-  /**
-   * Get list of available agents with their capabilities
-   * 
-   * @returns {Array} Array of agent information
-   */
-  getAgentsList() {
-    const agents = [];
-    
-    for (const [agentName, connection] of this.connections) {
-      const toolCount = Array.from(this.tools.values()).filter(tool => tool.agentName === agentName).length;
-      
-      agents.push({
-        name: agentName,
-        connected: connection.isConnected(),
-        toolCount: toolCount,
-        hasModel: !!connection.openRouterClient,
-        modelName: connection.agentConfig.model?.name || null,
-        description: connection.agentConfig.description || `MCP agent: ${agentName}`
-      });
-    }
-    
-    return agents;
-  }
 
   /**
    * Cleanup all connections

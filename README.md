@@ -20,9 +20,13 @@ AgentAggregator/
 │   ├── index.js                 # Main MCP server entry point
 │   ├── aggregator/
 │   │   ├── AgentAggregator.js   # Core aggregation logic
-│   │   └── MCPConnection.js     # Individual MCP server connection
-│   └── config/
-│       └── ConfigLoader.js      # Configuration management
+│   │   ├── MCPConnection.js     # Individual MCP server connection
+│   │   └── OpenRouterClient.js  # OpenRouter API integration
+│   ├── config/
+│   │   └── ConfigLoader.js      # Configuration management
+│   └── mcp-servers/            # Custom MCP server implementations
+│       ├── README.md           # MCP servers documentation
+│       └── qwen_mcp_server.py  # Qwen AI MCP server
 ├── config/
 │   └── agents.json             # Agent configuration file
 ├── tests/

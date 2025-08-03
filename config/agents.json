@@ -16,22 +16,7 @@
         "apiKey": "${OPENROUTER_API_KEY}"
       }
     },
-    {
-      "name": "everything",
-      "type": "mcp",
-      "enabled": true,
-      "description": "Everything server for testing all MCP features",
-      "connection": {
-        "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-everything"],
-        "env": {}
-      },
-      "model": {
-        "provider": "openrouter",
-        "name": "qwen/qwen3-coder:free",
-        "apiKey": "${OPENROUTER_API_KEY}"
-      }
-    },
+
     {
       "name": "claude-code-mcp",
       "type": "mcp",
@@ -43,6 +28,24 @@
         "env": {
           "CLAUDE_BIN": "/usr/local/bin/claude",
           "LOG_LEVEL": "info"
+        }
+      },
+      "model": {
+        "provider": "openrouter",
+        "name": "qwen/qwen3-coder:free",
+        "apiKey": "${OPENROUTER_API_KEY}"
+      }
+    },
+    {
+      "name": "qwen-mcp",
+      "type": "mcp",
+      "enabled": true,
+      "description": "Simple Qwen MCP server for AI chat and code generation",
+      "connection": {
+        "command": "python3",
+        "args": ["src/mcp-servers/qwen_mcp_server.py"],
+        "env": {
+          "DASHSCOPE_API_KEY": "${DASHSCOPE_API_KEY}"
         }
       },
       "model": {
