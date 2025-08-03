@@ -353,6 +353,12 @@ DEBUG=1 npm start
 3. Update documentation
 4. Test with real MCP servers
 
+## 📚 Documentation
+
+- **[Cursor Integration Guide](CURSOR_INTEGRATION.md)** - How to integrate with Cursor AI
+- **[Production Deployment Guide](PRODUCTION_GUIDE.md)** - Production setup for end users
+- **[Project Status](PROJECT_STATUS.md)** - Current development status
+
 ## 📄 License
 
 MIT License - see LICENSE file for details.

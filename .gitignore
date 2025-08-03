@@ -114,3 +114,7 @@ build/
 # Test artifacts
 test-results/
 coverage/
+
+# Local documentation files (English versions available)
+CURSOR_SETUP.md
+PRODUCTION_SETUP.md

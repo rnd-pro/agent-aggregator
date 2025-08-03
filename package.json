@@ -1,11 +1,12 @@
 {
-  "name": "agent-aggregator",
+  "name": "@agent-aggregator/core",
   "version": "1.0.0",
-  "description": "MCP server that aggregates tools from multiple MCP servers",
+  "description": "MCP server that aggregates tools from multiple MCP servers and provides unified access to AI agents",
   "type": "module",
   "main": "src/index.js",
   "bin": {
-    "agent-aggregator": "src/index.js"
+    "agent-aggregator": "./bin/agent-aggregator.js",
+    "agent-aggregator-setup": "./bin/setup.js"
   },
   "scripts": {
     "start": "node src/index.js",
@@ -13,15 +14,32 @@
     "test:server": "node scripts/test-server.js",
     "test:ai": "node scripts/test-ai-models.js",
     "test:ai:multiple": "node scripts/test-ai-models.js --multiple",
-    "dev": "node --watch src/index.js"
+    "dev": "node --watch src/index.js",
+    "setup": "node bin/setup.js",
+    "install-cursor": "node bin/install-cursor.js"
   },
-  "keywords": ["mcp", "server", "aggregator", "proxy", "ai", "agents"],
-  "author": "",
+  "files": [
+    "src/",
+    "bin/",
+    "config/",
+    "README.md",
+    "CURSOR_SETUP.md"
+  ],
+  "keywords": ["mcp", "server", "aggregator", "proxy", "ai", "agents", "cursor", "qwen", "claude"],
+  "author": "Agent Aggregator Team",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/agent-aggregator.git"
+  },
+  "homepage": "https://github.com/your-org/agent-aggregator#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

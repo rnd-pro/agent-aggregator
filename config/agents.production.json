@@ -1,0 +1,73 @@
+{
+  "agents": [
+    {
+      "name": "filesystem",
+      "type": "mcp",
+      "enabled": true,
+      "description": "File system operations server for local file access",
+      "connection": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-filesystem", "${ALLOWED_PATHS}"],
+        "env": {}
+      },
+      "model": {
+        "provider": "openrouter",
+        "name": "${DEFAULT_MODEL}",
+        "apiKey": "${OPENROUTER_API_KEY}"
+      }
+    },
+    {
+      "name": "claude-code-mcp",
+      "type": "mcp",
+      "enabled": true,
+      "description": "Claude Code MCP server wrapper (requires Claude CLI)",
+      "connection": {
+        "command": "npx",
+        "args": ["-y", "@kunihiros/claude-code-mcp"],
+        "env": {
+          "CLAUDE_BIN": "${CLAUDE_BIN}",
+          "LOG_LEVEL": "info"
+        }
+      },
+      "model": {
+        "provider": "openrouter",
+        "name": "${DEFAULT_MODEL}",
+        "apiKey": "${OPENROUTER_API_KEY}"
+      }
+    },
+    {
+      "name": "qwen-mcp",
+      "type": "mcp",
+      "enabled": "${QWEN_ENABLED}",
+      "description": "Simple Qwen MCP server for AI chat and code generation",
+      "connection": {
+        "command": "python3",
+        "args": ["${PACKAGE_ROOT}/src/mcp-servers/qwen_mcp_server.py"],
+        "env": {
+          "DASHSCOPE_API_KEY": "${DASHSCOPE_API_KEY}"
+        }
+      },
+      "model": {
+        "provider": "openrouter",
+        "name": "${QWEN_MODEL}",
+        "apiKey": "${OPENROUTER_API_KEY}"
+      }
+    }
+  ],
+  "aggregator": {
+    "timeout": 30000,
+    "retryAttempts": 3,
+    "retryDelay": 1000,
+    "maxConnections": 10,
+    "healthCheck": {
+      "enabled": true,
+      "interval": 60000
+    }
+  },
+  "defaults": {
+    "model": "anthropic/claude-3-haiku",
+    "allowedPaths": ["/tmp"],
+    "qwenModel": "qwen/qwen3-coder:free",
+    "qwenEnabled": false
+  }
+}
