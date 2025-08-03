@@ -185,14 +185,17 @@ You can add any MCP server that supports the standard MCP protocol. Popular opti
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   MCP Client    │────│ Agent Aggregator │────│  MCP Server 1   │
-│   (Cursor)      │    │   (This Server)  │    │  (Filesystem)   │
+│   MCP Client    │────│ Agent Aggregator │────│  Filesystem     │
+│   (Cursor)      │    │   (This Server)  │    │   MCP Server    │
 └─────────────────┘    │                  │    └─────────────────┘
                        │                  │    ┌─────────────────┐
-                       │                  │────│  MCP Server 2   │
-                       │                  │    │  (Everything)   │
+                       │                  │────│  Qwen AI        │
+                       │                  │    │   MCP Server    │
                        │                  │    └─────────────────┘
-                       │                  │    
+                       │                  │    ┌─────────────────┐
+                       │                  │────│  Claude Code    │
+                       │                  │    │   MCP Server    │
+                       │                  │    └─────────────────┘
                        │                  │    ┌─────────────────┐
                        │                  │────│  OpenRouter     │
                        │                  │    │  AI Models      │
