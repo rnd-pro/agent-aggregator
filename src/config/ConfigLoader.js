@@ -28,6 +28,11 @@ const DEFAULT_CONFIG = {
         command: 'npx',
         args: ['@anthropic-ai/mcp-server-claude-code'],
         env: {}
+      },
+      model: {
+        provider: 'openrouter',
+        name: 'qwen/qwen3-coder:free',
+        apiKey: '${OPENROUTER_API_KEY}'
       }
     },
     {
@@ -38,6 +43,11 @@ const DEFAULT_CONFIG = {
         command: 'npx',
         args: ['@qwen/mcp-server-qwen-coder'],
         env: {}
+      },
+      model: {
+        provider: 'openrouter',
+        name: 'qwen/qwen3-coder:free',
+        apiKey: '${OPENROUTER_API_KEY}'
       }
     }
   ],
@@ -45,6 +55,14 @@ const DEFAULT_CONFIG = {
     timeout: 30000,
     retryAttempts: 3,
     retryDelay: 1000
+  },
+  defaults: {
+    model: {
+      provider: 'openrouter',
+      name: 'qwen/qwen3-coder:free',
+      apiKey: '${OPENROUTER_API_KEY}',
+      baseUrl: 'https://openrouter.ai/api/v1'
+    }
   }
 };
 
@@ -85,11 +103,24 @@ function mergeConfig(defaultConfig, fileConfig) {
   const merged = { ...defaultConfig };
   
   if (fileConfig.agents) {
-    merged.agents = fileConfig.agents;
+    // Apply default model settings to agents that don't have them
+    merged.agents = fileConfig.agents.map(agent => {
+      if (!agent.model && merged.defaults && merged.defaults.model) {
+        return {
+          ...agent,
+          model: { ...merged.defaults.model }
+        };
+      }
+      return agent;
+    });
   }
   
   if (fileConfig.aggregator) {
     merged.aggregator = { ...defaultConfig.aggregator, ...fileConfig.aggregator };
+  }
+  
+  if (fileConfig.defaults) {
+    merged.defaults = { ...defaultConfig.defaults, ...fileConfig.defaults };
   }
   
   return applyEnvironmentOverrides(merged);
@@ -102,7 +133,7 @@ function mergeConfig(defaultConfig, fileConfig) {
  * @returns {Object} Configuration with environment overrides
  */
 function applyEnvironmentOverrides(config) {
-  const result = { ...config };
+  const result = JSON.parse(JSON.stringify(config)); // Deep clone
   
   // Override timeout if specified
   if (process.env.AGGREGATOR_TIMEOUT) {
@@ -114,7 +145,32 @@ function applyEnvironmentOverrides(config) {
     result.aggregator.retryAttempts = parseInt(process.env.AGGREGATOR_RETRY_ATTEMPTS);
   }
   
+  // Replace environment variable placeholders in model configurations
+  if (result.agents) {
+    result.agents.forEach(agent => {
+      if (agent.model && agent.model.apiKey) {
+        agent.model.apiKey = expandEnvironmentVariables(agent.model.apiKey);
+      }
+    });
+  }
+  
+  if (result.defaults && result.defaults.model && result.defaults.model.apiKey) {
+    result.defaults.model.apiKey = expandEnvironmentVariables(result.defaults.model.apiKey);
+  }
+  
   return result;
+}
+
+/**
+ * Expand environment variable placeholders in strings
+ * 
+ * @param {string} str - String with potential ${VAR} placeholders
+ * @returns {string} String with expanded variables
+ */
+function expandEnvironmentVariables(str) {
+  return str.replace(/\$\{([^}]+)\}/g, (match, varName) => {
+    return process.env[varName] || match;
+  });
 }
 
 export { loadConfig };

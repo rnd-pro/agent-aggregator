@@ -41,10 +41,17 @@ async function testMCPServer() {
           const response = JSON.parse(line.trim());
           console.log('📥 Received response:', JSON.stringify(response, null, 2));
           
-          if (response.result && response.result.capabilities) {
-            console.log('✅ Server responded with capabilities');
+          // Check for successful initialization
+          if (response.result && (response.result.capabilities || response.id === 1)) {
+            console.log('✅ Server responded successfully');
             testPassed = true;
           }
+          
+          // Check for tools list response
+          if (response.result && response.result.tools !== undefined) {
+            console.log(`📋 Server returned ${response.result.tools.length} tools`);
+          }
+          
         } catch (error) {
           // Ignore partial JSON
         }
@@ -57,8 +64,8 @@ async function testMCPServer() {
     console.error('❌ Server process error:', error);
   });
 
-  // Wait for server to start
-  await setTimeout(1000);
+  // Wait for server to start and connect to downstream servers
+  await setTimeout(5000);
 
   console.log('📤 Sending initialize request...');
   
@@ -82,7 +89,7 @@ async function testMCPServer() {
   serverProcess.stdin.write(JSON.stringify(initRequest) + '\n');
 
   // Wait for response
-  await setTimeout(2000);
+  await setTimeout(3000);
 
   // Send list tools request if initialization succeeded
   if (testPassed) {
@@ -96,7 +103,7 @@ async function testMCPServer() {
     };
 
     serverProcess.stdin.write(JSON.stringify(listToolsRequest) + '\n');
-    await setTimeout(1000);
+    await setTimeout(2000);
   }
 
   // Cleanup

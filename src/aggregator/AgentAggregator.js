@@ -162,11 +162,114 @@ export class AgentAggregator {
     for (const [agentName, connection] of this.connections) {
       status.agents[agentName] = {
         connected: connection.isConnected(),
-        toolCount: Array.from(this.tools.values()).filter(tool => tool.agentName === agentName).length
+        toolCount: Array.from(this.tools.values()).filter(tool => tool.agentName === agentName).length,
+        hasModel: !!connection.openRouterClient,
+        modelName: connection.agentConfig.model?.name || null
       };
     }
 
     return status;
+  }
+
+  /**
+   * Generate text using a specific agent's AI model
+   * 
+   * @param {string} agentName - Name of the agent
+   * @param {string} prompt - Text prompt to generate
+   * @param {Object} options - Generation options
+   * @returns {Promise<string>} Generated text
+   */
+  async generateText(agentName, prompt, options = {}) {
+    if (!this.initialized) {
+      throw new Error('AgentAggregator not initialized');
+    }
+
+    const connection = this.connections.get(agentName);
+    if (!connection) {
+      throw new Error(`Agent not found: ${agentName}`);
+    }
+
+    if (!connection.isConnected()) {
+      throw new Error(`Agent not connected: ${agentName}`);
+    }
+
+    return await connection.generateText(prompt, options);
+  }
+
+  /**
+   * Send chat completion request to a specific agent's AI model
+   * 
+   * @param {string} agentName - Name of the agent
+   * @param {Array} messages - Array of message objects
+   * @param {Object} options - Completion options
+   * @returns {Promise<Object>} Chat completion response
+   */
+  async chatCompletion(agentName, messages, options = {}) {
+    if (!this.initialized) {
+      throw new Error('AgentAggregator not initialized');
+    }
+
+    const connection = this.connections.get(agentName);
+    if (!connection) {
+      throw new Error(`Agent not found: ${agentName}`);
+    }
+
+    if (!connection.isConnected()) {
+      throw new Error(`Agent not connected: ${agentName}`);
+    }
+
+    return await connection.chatCompletion(messages, options);
+  }
+
+  /**
+   * Get model information for all agents
+   * 
+   * @returns {Promise<Object>} Model information for all agents
+   */
+  async getModelInfo() {
+    if (!this.initialized) {
+      throw new Error('AgentAggregator not initialized');
+    }
+
+    const modelInfo = {};
+    
+    for (const [agentName, connection] of this.connections) {
+      try {
+        modelInfo[agentName] = await connection.getModelInfo();
+      } catch (error) {
+        modelInfo[agentName] = {
+          agentName: agentName,
+          hasModel: false,
+          error: error.message
+        };
+      }
+    }
+
+    return modelInfo;
+  }
+
+  /**
+   * Get list of available agents with their capabilities
+   * 
+   * @returns {Array} Array of agent information
+   */
+  getAgentsList() {
+    const agents = [];
+    
+    for (const [agentName, connection] of this.connections) {
+      const toolCount = Array.from(this.tools.values()).filter(tool => tool.agentName === agentName).length;
+      
+      agents.push({
+        name: agentName,
+        connected: connection.isConnected(),
+        toolCount: toolCount,
+        hasModel: !!connection.openRouterClient,
+        modelName: connection.agentConfig.model?.name || null,
+        description: connection.agentConfig.description || `MCP agent: ${agentName}`
+      });
+    }
+    
+    return agents;
   }
 
   /**

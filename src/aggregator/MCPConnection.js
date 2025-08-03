@@ -7,6 +7,7 @@
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { OpenRouterClient } from './OpenRouterClient.js';
 
 export class MCPConnection {
   /**
@@ -22,6 +23,17 @@ export class MCPConnection {
     this.transport = null;
     this.process = null;
     this.connected = false;
+    
+    // Initialize OpenRouter client if model configuration is provided
+    this.openRouterClient = null;
+    if (agentConfig.model) {
+      try {
+        this.openRouterClient = new OpenRouterClient(agentConfig.model);
+        console.error(`Initialized OpenRouter client for ${agentConfig.name} with model ${agentConfig.model.name}`);
+      } catch (error) {
+        console.error(`Failed to initialize OpenRouter client for ${agentConfig.name}: ${error.message}`);
+      }
+    }
   }
 
   /**
@@ -69,6 +81,20 @@ export class MCPConnection {
 
       this.connected = true;
       console.error(`Successfully connected to MCP server: ${this.agentConfig.name}`);
+      
+      // Test OpenRouter connection if available
+      if (this.openRouterClient) {
+        try {
+          const connectionTest = await this.openRouterClient.testConnection();
+          if (connectionTest) {
+            console.error(`OpenRouter connection verified for ${this.agentConfig.name}`);
+          } else {
+            console.error(`OpenRouter connection test failed for ${this.agentConfig.name}`);
+          }
+        } catch (error) {
+          console.error(`OpenRouter connection test error for ${this.agentConfig.name}: ${error.message}`);
+        }
+      }
 
     } catch (error) {
       await this.cleanup();
@@ -175,6 +201,70 @@ export class MCPConnection {
   }
 
   /**
+   * Generate text using the associated AI model via OpenRouter
+   * 
+   * @param {string} prompt - Text prompt to send to the model
+   * @param {Object} options - Additional options for generation
+   * @returns {Promise<string>} Generated text response
+   */
+  async generateText(prompt, options = {}) {
+    if (!this.openRouterClient) {
+      throw new Error(`No AI model configured for agent ${this.agentConfig.name}`);
+    }
+
+    try {
+      const response = await this.openRouterClient.generateText(prompt, options);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to generate text for ${this.agentConfig.name}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Send structured chat completion request
+   * 
+   * @param {Array} messages - Array of message objects
+   * @param {Object} options - Additional options
+   * @returns {Promise<Object>} Chat completion response
+   */
+  async chatCompletion(messages, options = {}) {
+    if (!this.openRouterClient) {
+      throw new Error(`No AI model configured for agent ${this.agentConfig.name}`);
+    }
+
+    try {
+      const response = await this.openRouterClient.createCompletion(messages, options);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to complete chat for ${this.agentConfig.name}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get model information
+   * 
+   * @returns {Promise<Object>} Model configuration and status
+   */
+  async getModelInfo() {
+    const info = {
+      agentName: this.agentConfig.name,
+      hasModel: !!this.openRouterClient,
+      modelConfig: this.agentConfig.model || null
+    };
+
+    if (this.openRouterClient) {
+      try {
+        const modelInfo = await this.openRouterClient.getModelInfo();
+        info.modelDetails = modelInfo;
+      } catch (error) {
+        info.modelError = error.message;
+      }
+    }
+
+    return info;
+  }
+
+  /**
    * Disconnect from MCP server
    * 
    * @returns {Promise<void>}
@@ -211,5 +301,8 @@ export class MCPConnection {
       }
       this.transport = null;
     }
+    
+    // OpenRouter client doesn't need explicit cleanup
+    this.openRouterClient = null;
   }
 }

@@ -11,6 +11,8 @@
     "start": "node src/index.js",
     "test": "node tests/integration.test.js",
     "test:server": "node scripts/test-server.js",
+    "test:ai": "node scripts/test-ai-models.js",
+    "test:ai:multiple": "node scripts/test-ai-models.js --multiple",
     "dev": "node --watch src/index.js"
   },
   "keywords": ["mcp", "server", "aggregator", "proxy", "ai", "agents"],

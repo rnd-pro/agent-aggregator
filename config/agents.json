@@ -9,6 +9,11 @@
         "command": "npx",
         "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
         "env": {}
+      },
+      "model": {
+        "provider": "openrouter",
+        "name": "qwen/qwen3-coder:free",
+        "apiKey": "${OPENROUTER_API_KEY}"
       }
     },
     {
@@ -20,12 +25,17 @@
         "command": "npx",
         "args": ["-y", "@modelcontextprotocol/server-everything"],
         "env": {}
+      },
+      "model": {
+        "provider": "openrouter",
+        "name": "qwen/qwen3-coder:free",
+        "apiKey": "${OPENROUTER_API_KEY}"
       }
     },
     {
       "name": "claude-code-mcp",
       "type": "mcp",
-      "enabled": false,
+      "enabled": true,
       "description": "Claude Code MCP server wrapper (requires Claude CLI)",
       "connection": {
         "command": "npx",
@@ -34,6 +44,11 @@
           "CLAUDE_BIN": "/usr/local/bin/claude",
           "LOG_LEVEL": "info"
         }
+      },
+      "model": {
+        "provider": "openrouter",
+        "name": "qwen/qwen3-coder:free",
+        "apiKey": "${OPENROUTER_API_KEY}"
       }
     }
   ],
@@ -42,5 +57,14 @@
     "retryAttempts": 3,
     "retryDelay": 1000,
     "concurrentConnections": 3
+  },
+  "defaults": {
+    "model": {
+      "provider": "openrouter",
+      "name": "qwen/qwen3-coder:free",
+      "fallback": "openai/gpt-4o-mini",
+      "apiKey": "${OPENROUTER_API_KEY}",
+      "baseUrl": "https://openrouter.ai/api/v1"
+    }
   }
 }
