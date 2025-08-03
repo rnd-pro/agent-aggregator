@@ -5,8 +5,8 @@
   "type": "module",
   "main": "src/index.js",
   "bin": {
-    "agent-aggregator": "./bin/agent-aggregator.js",
-    "agent-aggregator-setup": "./bin/setup.js"
+    "agent-aggregator": "bin/agent-aggregator.js",
+    "agent-aggregator-setup": "bin/setup.js"
   },
   "scripts": {
     "start": "node src/index.js",
@@ -25,12 +25,22 @@
     "start-mcp.js",
     "README.md"
   ],
-  "keywords": ["mcp", "server", "aggregator", "proxy", "ai", "agents", "cursor", "qwen", "claude"],
+  "keywords": [
+    "mcp",
+    "server",
+    "aggregator",
+    "proxy",
+    "ai",
+    "agents",
+    "cursor",
+    "qwen",
+    "claude"
+  ],
   "author": "RND-PRO",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/RND-PRO/agent-aggregator.git"
+    "url": "git+https://github.com/RND-PRO/agent-aggregator.git"
   },
   "homepage": "https://github.com/RND-PRO/agent-aggregator#readme",
   "dependencies": {
